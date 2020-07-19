@@ -1,9 +1,24 @@
 const express = require('express');
 const router = express.Router();
+const Book = require('../models/book');
 
-router.get('/', ( request, response ) => {
+router.get('/', async ( request, response ) => {
 
-	response.render('index.ejs');
+	let books 
+
+	try { 
+
+		books = await Book.find().sort({ createdAt: 'desc', }).limit( 10 ).exec();
+
+	} catch {
+
+		books = [];
+
+	}
+
+	response.render('index.ejs', {
+		books: books
+	});
 
 });
 
