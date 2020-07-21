@@ -1,18 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const Book = require('../models/book.js');
 const Author = require('../models/author.js');
-const path = require('path');
-const fs = require('fs');
-const uploadPath = path.join('public', Book.coverImageBasePath );
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-const upload = multer({
-    dest: uploadPath,
-    fileFilter: ( request, file, callback ) => {
-        callback( null, imageMimeTypes.includes( file.mimetype ))
-    }
-});
 
 // All Books Route
 router.get('/', async ( request, response ) => {
@@ -62,18 +52,17 @@ router.get('/new', async ( request, response ) => {
 });
 
 // Create Book Route
-router.post('/', upload.single('cover'), async ( request, response ) => {
-
-    const fileName = request.file != null ? request.file.filename : null;
+router.post('/', async ( request, response ) => {
 
     const book = new Book({
         title: request.body.title,
         author: request.body.author,
         publishDate: new Date( request.body.publishDate ),
         pageCount: request.body.pageCount,
-        coverImageName: fileName,
         description: request.body.description
     });
+
+    saveCover( book, request.body.cover );
 
     try {
 
@@ -83,12 +72,6 @@ router.post('/', upload.single('cover'), async ( request, response ) => {
         response.redirect('/books');
 
     } catch {
-
-        if ( book.coverImageName != null ) {
-
-            removeBookCover( book.coverImageName );
-
-        }
 
         renderNewPage( response, book, true );
 
@@ -119,17 +102,19 @@ async function renderNewPage( response, book, hasError = false ){
 
 };
 
-function removeBookCover ( fileName ) {
+function saveCover( book, coverEncoded ) {
 
-    fs.unlink( path.join( uploadPath, fileName ), error => {
+    if ( coverEncoded == null ) return;
 
-        if ( error ) {
+    const cover = JSON.parse( coverEncoded );
 
-            console.error( error );
+    if ( cover != null && imageMimeTypes.includes( cover.type )) {
 
-        }
+        book.coverImage = new Buffer.from( cover.data, 'base64' );
 
-    });
+        book.coverImageType = cover.type;
+
+    }
 
 }
 

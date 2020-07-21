@@ -1,7 +1,4 @@
 const mongoose = require('mongoose');
-const path = require('path');
-
-const coverImageBasePath = 'uploads/bookCovers';
 
 const bookSchema = new mongoose.Schema({ // Schema params
     title: {
@@ -24,7 +21,11 @@ const bookSchema = new mongoose.Schema({ // Schema params
         required: true,
         default: Date.now
     },
-    coverImageName: {
+    coverImage: {
+        type: Buffer,
+        required: true
+    },
+    coverImageType: {
         type: String,
         required: true
     },
@@ -37,13 +38,12 @@ const bookSchema = new mongoose.Schema({ // Schema params
 
 bookSchema.virtual('coverImagePath').get( function(){ // in this case we use standart function instead arrow function because we need this context from our book class
 
-    if ( this.coverImageName != null ) {
+    if ( this.coverImage != null  && this.coverImageType != null ) {
 
-        return path.join('/', coverImageBasePath, this.coverImageName ); // root folder ( puclic ), path to the covers book folder, name of the file
+        return `data:${ this.coverImageType };charset=utf-8;base64,${ this.coverImage.toString('base64')}`
 
     }
 
 }); // it allow us create virtual property
 
 module.exports = mongoose.model( 'Book', bookSchema ); // Define new schema
-module.exports.coverImageBasePath = coverImageBasePath;
