@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Book = require('../models/book.js');
 const Author = require('../models/author.js');
+const { response } = require('express');
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
 
 // All Books Route
@@ -47,7 +48,7 @@ router.get('/', async ( request, response ) => {
 // New Book Route
 router.get('/new', async ( request, response ) => {
 
-    renderNewPage( response, new Book() );
+    renderNewPage( response, new Book(), 'new' );
 
 });
 
@@ -68,18 +69,139 @@ router.post('/', async ( request, response ) => {
 
         const newBook = await book.save();
 
-        // response.redirect(`books/${ newBook.id }`);
-        response.redirect('/books');
+        response.redirect(`books/${ newBook.id }`);
 
     } catch {
 
-        renderNewPage( response, book, true );
+        renderNewPage( response, book, 'new', true );
 
     }
 
 });
 
-async function renderNewPage( response, book, hasError = false ){
+router.get('/:id', async ( request, response ) => { // show book route
+
+    try {
+
+        const book = await Book.findById( request.params.id )
+                               .populate('author') // populate put author object insode book and we can get info about author from book, itherwise it will be just and id
+                               .exec();
+
+        response.render('books/show', {
+            book: book
+        });
+
+    } catch {
+
+        response.redirect('/');
+
+    }
+
+});
+
+router.get('/:id/edit', async ( request, response ) => { // Edit book route
+
+    try {
+
+        const book = await Book.findById( request.params.id );
+
+        renderEditPage( response, book, 'edit' );
+
+    } catch {
+
+        response.redirect('/');
+
+    }
+
+});
+
+// Update Book Route
+router.put('/:id', async ( request, response ) => {
+
+    let book
+
+    try {
+
+        book = await Book.findById( request.params.id );
+
+        book.title = request.body.title;
+        book.author = request.body.author;
+        book.publishDate = new Date( request.body.publishDate );
+        book.pageCount = request.body.pageCount
+        book.description = request.body.description
+
+        if ( request.body.cover != null && request.body.cover != '' ) {
+
+            saveCover( book. require.body.cover );
+
+        }
+
+        await book.save();
+
+        response.redirect(`/books/${ book.id }`);
+
+    } catch {
+
+        if ( book != null ) {
+
+            renderEditPage( response, book, 'edit', true );
+
+        } else {
+
+            response.redirect('/');
+
+        }
+
+        
+
+    }
+
+});
+
+router.delete('/:id', async ( request, response ) => { // Delete Book Page
+
+    let book 
+
+    try {
+
+        book = await Book.findById( request.params.id );
+
+        await book.delete();
+
+        response.redirect('/books');
+
+    } catch {
+
+        if ( book != null ) {
+
+            response.render('books/show', {
+                book: book,
+                errorMessage: 'Could not remove book'
+            });
+
+        } else {
+
+            response.redirect('/');
+
+        }
+
+    }   
+
+});
+
+async function renderEditPage( response, book, form, hasError = false ) {
+
+    renderFormPage( response, book, 'edit', hasError );
+
+}
+
+async function renderNewPage( response, book, form, hasError = false ) {
+
+    renderFormPage( response, book, 'new', hasError );
+
+}
+
+async function renderFormPage( response, book, form, hasError = false ){
 
     try {
 
@@ -90,9 +212,21 @@ async function renderNewPage( response, book, hasError = false ){
             book: book
         }
 
-        if ( hasError ) params.errorMessage = 'Error Creating Book';
+        if ( hasError ) {
 
-        response.render('books/new', params );
+            if ( form === 'edit' ) {
+
+                params.errorMessage = 'Error Updating Book';
+
+            } else {
+
+                params.errorMessage = 'Error Creating Book';
+
+            }
+
+        }
+
+        response.render(`books/${ form }`, params );
 
     } catch {
 
