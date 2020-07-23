@@ -1,0 +1,32 @@
+@import 'shared/variables.css';
+@import 'shared/header.css';
+@import 'shared/buttons.css';
+
+:root {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+    color: var( --color-text-light );
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient( to right, var(--color-background-dark), var( --color-background-light));
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    margin-bottom: 3rem; /* it means that container never touchd bottom of screen it always will be higher */
+}
+
+.inner-container {
+    margin: 0 2rem; /* means it a bit smaller that parent container */
+}
+
+.page-header {
+    font-size: 2rem;
+    font-weight: 500;
+}
